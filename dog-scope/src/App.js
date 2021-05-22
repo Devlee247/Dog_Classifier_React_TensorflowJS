@@ -16,7 +16,6 @@ const stateMachine = {
 
 function App() {
   const inputRef = useRef();
-
   const reducer = (currentState, event) =>
     stateMachine.states[currentState].on[event] || stateMachine.initial;
 
@@ -24,6 +23,7 @@ function App() {
     useReducer(reducer, stateMachine.initial)
   const next = () => dispatch("next")
   const [model, setModel] = useState(null)
+  const [imageUrl, setImageUrl] = useState(null)
 
   const load = async () => {
     next()
@@ -32,10 +32,19 @@ function App() {
     next()
   }
 
+  const handleUpload = event => {
+    const { files } = event.target;
+    if (files.length > 0) {
+      const url = URL.createObjectURL(files[0])
+      setImageUrl(url)
+      next();
+    }
+  };
+
   const buttonProps = {
     initial: { text: "Load Model", action: load },
     loadingModel: { text: "Loading Model…", action: () => {} },
-    modelReady: { text: "Upload Image", action: () => {} },
+    modelReady: { text: "Upload Image", action: () => inputRef.current.click() },
     imageReady: { text: "Identify Breed", action: () => {} },
     identifying: { text: "Identifying…", action: () => {} },
     complete: { text: "Reset", action: () => {} }
@@ -46,7 +55,7 @@ function App() {
       <button onClick={buttonProps[appState].action}>
         {buttonProps[appState].text}
       </button>
-      <input type="file" accept="image/*" capture="camera" ref={inputRef}>
+      <input type="file" accept="image/*" capture="camera" ref={inputRef} onChange={handleUpload}>
       </input>
     </div>
   );

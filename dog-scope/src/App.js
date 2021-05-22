@@ -1,5 +1,6 @@
 import './App.css';
-import React, { useReducer } from "react";
+import React, { useReducer, useState, useRef } from "react";
+import * as mobilenet from '@tensorflow-models/mobilenet';
 
 const stateMachine = {
   initial: "initial",
@@ -13,27 +14,40 @@ const stateMachine = {
   }
  };
 
- const buttonProps = {
-  initial: { text: "Load Model", action: () => {} },
-  loadingModel: { text: "Loading Model…", action: () => {} },
-  modelReady: { text: "Upload Image", action: () => {} },
-  imageReady: { text: "Identify Breed", action: () => {} },
-  identifying: { text: "Identifying…", action: () => {} },
-  complete: { text: "Reset", action: () => {} }
-  };
-
-const reducer = (currentState, event) =>
-  stateMachine.states[currentState].on[event] || stateMachine.initial;
-
 function App() {
+  const inputRef = useRef();
+
+  const reducer = (currentState, event) =>
+    stateMachine.states[currentState].on[event] || stateMachine.initial;
+
   const [appState, dispatch] =
     useReducer(reducer, stateMachine.initial)
   const next = () => dispatch("next")
+  const [model, setModel] = useState(null)
+
+  const load = async () => {
+    next()
+    const model = await mobilenet.load();
+    setModel(model)
+    next()
+  }
+
+  const buttonProps = {
+    initial: { text: "Load Model", action: load },
+    loadingModel: { text: "Loading Model…", action: () => {} },
+    modelReady: { text: "Upload Image", action: () => {} },
+    imageReady: { text: "Identify Breed", action: () => {} },
+    identifying: { text: "Identifying…", action: () => {} },
+    complete: { text: "Reset", action: () => {} }
+  };
+
   return (
     <div>
       <button onClick={buttonProps[appState].action}>
         {buttonProps[appState].text}
       </button>
+      <input type="file" accept="image/*" capture="camera" ref={inputRef}>
+      </input>
     </div>
   );
 }

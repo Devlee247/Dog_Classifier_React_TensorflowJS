@@ -16,6 +16,7 @@ const stateMachine = {
 
 function App() {
   const inputRef = useRef();
+  const imageRef = useRef();
   const reducer = (currentState, event) =>
     stateMachine.states[currentState].on[event] || stateMachine.initial;
 
@@ -24,12 +25,28 @@ function App() {
   const next = () => dispatch("next")
   const [model, setModel] = useState(null)
   const [imageUrl, setImageUrl] = useState(null)
+  const [results, setResults] = useState([])
 
   const load = async () => {
     next()
     const model = await mobilenet.load();
     setModel(model)
     next()
+  }
+
+  const identify = async () => {
+    console.log("called identify")
+    next();
+    const results = await model.classify(imageRef.current);
+    setResults(results)
+    console.log(results)
+    next();
+  }
+
+  const reset = () => {
+    setResults([])
+    setImageUrl(null)
+    next();
   }
 
   const handleUpload = event => {
@@ -41,17 +58,40 @@ function App() {
     }
   };
 
+  const formatResult = ({ className, probability}) => (
+    <li key={className}>
+    {`${className}: %${(probability * 100).toFixed(2)}`}
+    </li>
+   )
+
   const buttonProps = {
     initial: { text: "Load Model", action: load },
     loadingModel: { text: "Loading Model…", action: () => {} },
     modelReady: { text: "Upload Image", action: () => inputRef.current.click() },
-    imageReady: { text: "Identify Breed", action: () => {} },
+    imageReady: { text: "Identify Breed", action: identify },
     identifying: { text: "Identifying…", action: () => {} },
-    complete: { text: "Reset", action: () => {} }
+    complete: { text: "Reset", action: reset }
   };
+
+  const {
+    showImage = false,
+    showResults = false
+  } = stateMachine.states[appState];
 
   return (
     <div>
+      { showImage &&
+        <img
+        src={imageUrl}
+        alt="upload-preview"
+        ref={imageRef}
+        />
+      }
+      { 
+        showResults && (
+        <ul>{results.map(formatResult)}</ul>
+        )
+      }
       <button onClick={buttonProps[appState].action}>
         {buttonProps[appState].text}
       </button>
